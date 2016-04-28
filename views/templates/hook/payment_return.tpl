@@ -23,9 +23,17 @@
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 
+{if $status == 'ok'}
 <p>{l s='Your order on %s is complete.' sprintf=$shop_name mod='cashondelivery'}
-	<br /><br />
-	{l s='You have chosen the cash on delivery method.' mod='cashondelivery'}
-	<br /><br /><span class="bold">{l s='Your order will be sent very soon.' mod='cashondelivery'}</span>
-	<br /><br />{l s='For any questions or for further information, please contact our' mod='cashondelivery'} <a href="{$link->getPageLink('contact-form', true)|escape:'html'}">{l s='customer support' mod='cashondelivery'}</a>.
-</p>
+		<br /><br />
+		{l s='You have chosen the cash on delivery method.' mod='cashondelivery'}
+		<br /><br /><strong>{l s='Your order will be sent very soon.' mod='cashondelivery'}</strong>
+		<br /><br />- {l s='Amount' mod='cashondelivery'} <span class="price"><strong>{$total_to_pay}</strong></span>
+		<br /><br />{l s='For any questions or for further information, please contact our' mod='cashondelivery'} <a href="{$link->getPageLink('contact-form', true)|escape:'html'}">{l s='customer support' mod='cashondelivery'}</a>.
+	</p>
+{else}
+	<p class="warning">
+		{l s='We noticed a problem with your order. If you think this is an error, feel free to contact our' mod='cashondelivery'} 
+		<a href="{$link->getPageLink('contact', true)|escape:'html'}">{l s='expert customer support team' mod='cashondelivery'}</a>.
+	</p>
+{/if}

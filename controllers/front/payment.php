@@ -1,4 +1,5 @@
-{*
+<?php
+/*
 * 2007-2015 PrestaShop
 *
 * NOTICE OF LICENSE
@@ -21,11 +22,33 @@
 *  @copyright  2007-2015 PrestaShop SA
 *  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
-*}
+*/
 
-<p class="payment_module">
-	<a href="{$link->getModuleLink('cashondelivery', 'payment', [], true)|escape:'html'}" title="{l s='Pay with cash on delivery (COD)' mod='cashondelivery'}">
-		<img src="{$this_path_cod}cashondelivery.gif" alt="{l s='Pay with cash on delivery (COD)' mod='cashondelivery'}"width="86" height="49"/>
-		{l s='Pay with cash on delivery (COD)' mod='cashondelivery'}&nbsp;<span>{l s='You pay for the merchandise upon delivery' mod='cashondelivery'}</span>
-	</a>
-</p>
+/**
+ * @since 1.5.0
+ */
+class CashondeliveryPaymentModuleFrontController extends ModuleFrontController
+{
+	public $ssl = true;
+	public $display_column_left = false;
+
+	/**
+	 * @see FrontController::initContent()
+	 */
+	public function initContent()
+	{
+		parent::initContent();
+
+		$cart = $this->context->cart;
+
+		$this->context->smarty->assign(array(
+			'nbProducts' => $cart->nbProducts(),
+			'total' => $cart->getOrderTotal(true, Cart::BOTH),
+			'this_path' => $this->module->getPathUri(),
+			'this_path_cod' => $this->module->getPathUri(),
+			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->module->name.'/'
+		));
+
+		$this->setTemplate('payment_execution.tpl');
+	}
+}

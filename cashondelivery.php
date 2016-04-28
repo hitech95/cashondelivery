@@ -33,10 +33,10 @@ class CashOnDelivery extends PaymentModule
 	{
 		$this->name = 'cashondelivery';
 		$this->tab = 'payments_gateways';
-		$this->version = '0.7.5';
+		$this->version = '0.7.6';
 		$this->author = 'PrestaShop';
 		$this->need_instance = 1;
-		$this->controllers = array('validation');
+		$this->controllers = array('payment', 'validation');
 		$this->is_eu_compatible = 1;
 
 		$this->currencies = false;
@@ -45,13 +45,6 @@ class CashOnDelivery extends PaymentModule
 
 		$this->displayName = $this->l('Cash on delivery (COD)');
 		$this->description = $this->l('Accept cash on delivery payments');
-
-		/* For 1.4.3 and less compatibility */
-		$updateConfig = array('PS_OS_CHEQUE', 'PS_OS_PAYMENT', 'PS_OS_PREPARATION', 'PS_OS_SHIPPING', 'PS_OS_CANCELED', 'PS_OS_REFUND', 'PS_OS_ERROR', 'PS_OS_OUTOFSTOCK', 'PS_OS_BANKWIRE', 'PS_OS_PAYPAL', 'PS_OS_WS_PAYMENT');
-		if (!Configuration::get('PS_OS_PAYMENT'))
-			foreach ($updateConfig as $u)
-				if (!Configuration::get($u) && defined('_'.$u.'_'))
-					Configuration::updateValue($u, constant('_'.$u.'_'));
 	}
 
 	public function install()
@@ -61,7 +54,7 @@ class CashOnDelivery extends PaymentModule
 		return true;
 	}
 
-	public function hasProductDownload($cart)
+	private function hasProductDownload($cart)
 	{
 		foreach ($cart->getProducts() AS $product)
 		{
@@ -75,7 +68,7 @@ class CashOnDelivery extends PaymentModule
 	public function hookPayment($params)
 	{
 		if (!$this->active)
-			return ;
+			return;
 
 		global $smarty;
 
@@ -95,24 +88,39 @@ class CashOnDelivery extends PaymentModule
 	public function hookDisplayPaymentEU($params)
 	{
 		if (!$this->active)
-			return ;
+			return;
 
 		// Check if cart has product download
 		if ($this->hasProductDownload($params['cart']))
 			return false;
 
-		return array(
+		$payment_options = array(
 			'cta_text' => $this->l('Pay with cash on delivery (COD)'),
-			'logo' => Media::getMediaPath(dirname(__FILE__).'/cashondelivery.png'),
-			'action' => $this->context->link->getModuleLink($this->name, 'validation', array('confirm' => true), true)
+			'logo' => Media::getMediaPath(dirname(__FILE__).'/cashondelivery.jpg'),
+			'action' => $this->context->link->getModuleLink($this->name, 'validation', array(), true)
 		);
+		
+		return $payment_options;
 	}
 
 	public function hookPaymentReturn($params)
 	{
 		if (!$this->active)
-			return ;
+			return;
+		
+		$state = $params['objOrder']->getCurrentState();
+		if (in_array($state, array(Configuration::get('PS_OS_PREPARATION'), Configuration::get('PS_OS_OUTOFSTOCK'), Configuration::get('PS_OS_OUTOFSTOCK_UNPAID'))))
+		{
+			$this->smarty->assign(array(
+				'total_to_pay' => Tools::displayPrice($params['total_to_pay'], $params['currencyObj'], false),
+				'status' => 'ok'
+			));
+			if (isset($params['objOrder']->reference) && !empty($params['objOrder']->reference))
+				$this->smarty->assign('reference', $params['objOrder']->reference);
+		}
+		else
+			$this->smarty->assign('status', 'failed');
 
-		return $this->display(__FILE__, 'confirmation.tpl');
+		return $this->display(__FILE__, 'payment_return.tpl');
 	}
 }
